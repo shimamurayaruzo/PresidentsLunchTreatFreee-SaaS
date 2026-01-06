@@ -25,6 +25,7 @@ export default async function AdminMonthlyPage({
   const sp = await searchParams
   const yearMonth = typeof sp.yearMonth === "string" ? sp.yearMonth : thisMonth()
   const executed = typeof sp.executed === "string" ? sp.executed : ""
+  const error = typeof sp.error === "string" ? sp.error : ""
 
   const batchId = exportBatchId(session.tenantId, yearMonth)
   const exportDoc = await findExportByBatchId({ exportBatchId: batchId })
@@ -37,7 +38,18 @@ export default async function AdminMonthlyPage({
       {executed ? (
         <div className="mt-4 rounded-md border p-4">
           <p className="font-medium">実行しました</p>
-          <p className="mt-1 text-sm text-muted-foreground">（MVPではfreee下書き作成は未接続です。DBの実行ログのみ記録します）</p>
+          <p className="mt-1 text-sm text-muted-foreground">freeeへ下書きを作成しました（設定次第でURLが表示されます）。</p>
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/5 p-4">
+          <p className="font-medium text-destructive">実行できませんでした</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {error === "no_preview"
+              ? "先にプレビューを作成してください。"
+              : "freee送信に失敗しました。環境変数（FREEE_ACCESS_TOKEN / FREEE_COMPANY_ID など）を確認してください。"}
+          </p>
         </div>
       ) : null}
 
@@ -78,6 +90,14 @@ export default async function AdminMonthlyPage({
               </button>
             </form>
           </div>
+
+          {exportDoc.freee_draft_url ? (
+            <div className="mt-3 text-sm">
+              <a href={exportDoc.freee_draft_url} target="_blank" rel="noreferrer" className="underline underline-offset-4">
+                freee下書きを開く
+              </a>
+            </div>
+          ) : null}
 
           <div className="mt-4 grid gap-2 text-sm">
             <div className="flex justify-between">
