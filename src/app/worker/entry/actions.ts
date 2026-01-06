@@ -7,6 +7,7 @@ import { z } from "zod"
 import { createLunchEntry, findDuplicateByPhotoHash } from "@/lib/entries/repo"
 import { uploadLunchPhotoToDrive } from "@/lib/drive"
 import { logger } from "@/lib/logger"
+import { writeAuditEvent } from "@/lib/audit"
 import { requireWorkerContext } from "@/lib/worker-auth"
 
 const schema = z.object({
@@ -75,6 +76,18 @@ export async function submitLunchEntry(formData: FormData) {
     employee_id: ctx.employeeId.toString(),
     entry_id: entry._id.toString(),
     review_status: reviewStatus,
+  })
+
+  await writeAuditEvent({
+    tenant_id: ctx.tenantId,
+    event: "LUNCH_ENTRY_CREATED",
+    actor_type: "worker",
+    actor_id: ctx.employeeId.toString(),
+    meta: {
+      entry_id: entry._id.toString(),
+      year_month: entry.year_month,
+      review_status: reviewStatus,
+    },
   })
 
   redirect(`/worker/entry?success=1&review=${reviewStatus}`)
