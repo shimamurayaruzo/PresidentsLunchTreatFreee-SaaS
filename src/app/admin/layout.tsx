@@ -26,6 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               社長ランチごちします
             </Link>
             <nav className="flex items-center gap-1">
+              <NavLink href="/admin">ダッシュボード</NavLink>
               <NavLink href="/admin/entries">申請一覧</NavLink>
               <NavLink href="/admin/pairing">QR発行</NavLink>
               <NavLink href="/admin/monthly">月次集計</NavLink>

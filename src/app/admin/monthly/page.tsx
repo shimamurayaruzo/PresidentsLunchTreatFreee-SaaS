@@ -46,6 +46,11 @@ export default async function AdminMonthlyPage({
               ? "先にプレビューを作成してください。"
               : "freee送信に失敗しました。環境変数（FREEE_ACCESS_TOKEN / FREEE_COMPANY_ID など）を確認してください。"}
           </p>
+          {exportDoc?.status === "error" && exportDoc.error_message ? (
+            <pre className="mt-3 overflow-auto rounded-md border bg-background p-3 text-xs text-foreground">
+              {exportDoc.error_message}
+            </pre>
+          ) : null}
         </div>
       ) : null}
 
