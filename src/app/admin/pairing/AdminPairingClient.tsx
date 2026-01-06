@@ -1,6 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import Image from "next/image"
+import QRCode from "qrcode"
 
 type Employee = { id: string; email: string; name?: string }
 
@@ -10,8 +12,29 @@ export function AdminPairingClient({ initialEmployees }: { initialEmployees: Emp
   const [name, setName] = useState("")
   const [selectedId, setSelectedId] = useState<string>(initialEmployees[0]?.id ?? "")
   const [pairingUrl, setPairingUrl] = useState<string>("")
+  const [qrDataUrl, setQrDataUrl] = useState<string>("")
   const [busy, setBusy] = useState(false)
   const canCreate = useMemo(() => email.trim().length > 3, [email])
+
+  useEffect(() => {
+    let cancelled = false
+    async function run() {
+      if (!pairingUrl) {
+        setQrDataUrl("")
+        return
+      }
+      try {
+        const url = await QRCode.toDataURL(pairingUrl, { margin: 1, width: 240 })
+        if (!cancelled) setQrDataUrl(url)
+      } catch {
+        if (!cancelled) setQrDataUrl("")
+      }
+    }
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [pairingUrl])
 
   async function refreshEmployees() {
     const res = await fetch("/api/admin/employees")
@@ -126,6 +149,22 @@ export function AdminPairingClient({ initialEmployees }: { initialEmployees: Emp
               >
                 コピー
               </button>
+
+              {qrDataUrl ? (
+                <div className="mt-4">
+                  <p className="text-sm font-medium">QRコード</p>
+                  <div className="mt-2 inline-flex rounded-md border bg-white p-2">
+                    <Image src={qrDataUrl} alt="pairing qr" width={240} height={240} />
+                  </div>
+                  <a
+                    href={qrDataUrl}
+                    download="pairing-qr.png"
+                    className="mt-2 inline-block rounded-md border px-3 py-1.5 text-xs"
+                  >
+                    ダウンロード
+                  </a>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
