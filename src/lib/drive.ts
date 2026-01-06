@@ -12,8 +12,23 @@ function getDriveClient() {
   const clientEmail = env.GOOGLE_DRIVE_CLIENT_EMAIL
   const privateKey = env.GOOGLE_DRIVE_PRIVATE_KEY
 
+  // Preferred (hackathon): OAuth user token (My Drive upload)
+  const oauthClientId = env.GOOGLE_OAUTH_CLIENT_ID
+  const oauthClientSecret = env.GOOGLE_OAUTH_CLIENT_SECRET
+  const oauthRedirectUri = env.GOOGLE_OAUTH_REDIRECT_URI
+  const oauthRefreshToken = env.GOOGLE_OAUTH_REFRESH_TOKEN
+
+  if (oauthClientId && oauthClientSecret && oauthRedirectUri && oauthRefreshToken) {
+    const auth = new google.auth.OAuth2(oauthClientId, oauthClientSecret, oauthRedirectUri)
+    auth.setCredentials({ refresh_token: oauthRefreshToken })
+    return google.drive({ version: "v3", auth })
+  }
+
+  // Fallback: Service Account (requires Shared Drive due to quota limitations)
   if (!clientEmail || !privateKey) {
-    throw new Error("Google Drive is not configured. Set GOOGLE_DRIVE_CLIENT_EMAIL and GOOGLE_DRIVE_PRIVATE_KEY.")
+    throw new Error(
+      "Google Drive is not configured. Set GOOGLE_OAUTH_CLIENT_ID/SECRET/REDIRECT_URI/REFRESH_TOKEN (recommended) or GOOGLE_DRIVE_CLIENT_EMAIL/PRIVATE_KEY (service account).",
+    )
   }
 
   const auth = new google.auth.JWT({
