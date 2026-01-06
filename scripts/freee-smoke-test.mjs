@@ -65,10 +65,55 @@ function todayYmd() {
   return `${yyyy}-${mm}-${dd}`
 }
 
+async function refreshAccessTokenWithRefreshToken() {
+  const refreshToken = required("FREEE_REFRESH_TOKEN")
+  const clientId = required("FREEE_CLIENT_ID")
+  const clientSecret = required("FREEE_CLIENT_SECRET")
+  const redirectUri = required("FREEE_REDIRECT_URI")
+
+  const res = await fetch("https://accounts.secure.freee.co.jp/public_api/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+    }).toString(),
+  })
+
+  const text = await res.text()
+  let json
+  try {
+    json = text ? JSON.parse(text) : null
+  } catch {
+    json = { raw: text }
+  }
+
+  if (!res.ok) {
+    throw new Error(`token refresh failed: ${res.status} ${res.statusText} ${JSON.stringify(json)}`)
+  }
+
+  if (!json?.access_token) throw new Error("token refresh response missing access_token")
+  return json
+}
+
 async function main() {
-  const accessToken = required("FREEE_ACCESS_TOKEN")
+  let accessToken = process.env.FREEE_ACCESS_TOKEN ? String(process.env.FREEE_ACCESS_TOKEN).trim() : ""
   const companyId = Number(required("FREEE_COMPANY_ID"))
   if (!Number.isFinite(companyId)) throw new Error("FREEE_COMPANY_ID must be a number")
+
+  if (!accessToken) {
+    console.log("[freee smoke] FREEE_ACCESS_TOKEN not set; trying refresh_token flow")
+    const refreshed = await refreshAccessTokenWithRefreshToken()
+    accessToken = String(refreshed.access_token)
+    // Note: refreshed.refresh_token may rotate; for hackathon we only print a hint.
+    console.log("[freee smoke] refreshed token:", redactToken(accessToken))
+    if (refreshed.refresh_token) {
+      console.log("[freee smoke] NOTE: refresh_token may have rotated; update FREEE_REFRESH_TOKEN if needed.")
+    }
+  }
 
   console.log("[freee smoke] start")
   console.log("[freee smoke] token:", redactToken(accessToken))

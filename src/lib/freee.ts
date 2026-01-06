@@ -1,5 +1,6 @@
 import { env } from "@/env"
 import { logger } from "@/lib/logger"
+import { getFreeeAccessToken } from "@/lib/freee-token"
 
 const FREEE_API_BASE = "https://api.freee.co.jp"
 
@@ -8,16 +9,16 @@ type FreeeError = {
   body: unknown
 }
 
-async function freeeFetch(path: string, init?: RequestInit) {
-  const token = env.FREEE_ACCESS_TOKEN
-  if (!token) throw new Error("FREEE_ACCESS_TOKEN is not set")
+async function freeeFetch(input: { tenantId: string; path: string; init?: RequestInit }) {
+  const token = await getFreeeAccessToken({ tenantId: input.tenantId })
+  if (!token) throw new Error("freee access token is not available")
 
-  const res = await fetch(`${FREEE_API_BASE}${path}`, {
-    ...init,
+  const res = await fetch(`${FREEE_API_BASE}${input.path}`, {
+    ...(input.init ?? {}),
     headers: {
       authorization: `Bearer ${token}`,
       "content-type": "application/json",
-      ...(init?.headers ?? {}),
+      ...(input.init?.headers ?? {}),
     },
     cache: "no-store",
   })
@@ -26,14 +27,14 @@ async function freeeFetch(path: string, init?: RequestInit) {
   const body = text ? (JSON.parse(text) as unknown) : null
   if (!res.ok) {
     const err: FreeeError = { status: res.status, body }
-    logger.error("freee api error", { path, status: res.status, body })
+    logger.error("freee api error", { path: input.path, status: res.status, body })
     throw Object.assign(new Error(`freee api error: ${res.status}`), { freee: err })
   }
   return body
 }
 
-export async function listAccountItems(companyId: number) {
-  return await freeeFetch(`/api/1/account_items?company_id=${companyId}`)
+export async function listAccountItems(input: { tenantId: string; companyId: number }) {
+  return await freeeFetch({ tenantId: input.tenantId, path: `/api/1/account_items?company_id=${input.companyId}` })
 }
 
 /**
@@ -41,6 +42,7 @@ export async function listAccountItems(companyId: number) {
  * Note: freee API required fields can vary by company settings; we try minimal+optional account item & tax code.
  */
 export async function createDraftDeal(input: {
+  tenantId: string
   companyId: number
   issueDate: string // YYYY-MM-DD
   amount: number
@@ -53,7 +55,10 @@ export async function createDraftDeal(input: {
   let chosenAccountItemId = accountItemId
   if (!chosenAccountItemId) {
     try {
-      const data = (await listAccountItems(input.companyId)) as { account_items?: Array<{ id: number; name: string }> }
+      const data = (await listAccountItems({
+        tenantId: input.tenantId,
+        companyId: input.companyId,
+      })) as { account_items?: Array<{ id: number; name: string }> }
       const items = data?.account_items ?? []
       const hit = items.find((x) => x.name?.includes("福利厚生")) ?? items[0]
       if (hit?.id) chosenAccountItemId = hit.id
@@ -76,9 +81,13 @@ export async function createDraftDeal(input: {
     details: [detail],
   }
 
-  return await freeeFetch("/api/1/deals", {
-    method: "POST",
-    body: JSON.stringify(payload),
+  return await freeeFetch({
+    tenantId: input.tenantId,
+    path: "/api/1/deals",
+    init: {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
   })
 }
 
