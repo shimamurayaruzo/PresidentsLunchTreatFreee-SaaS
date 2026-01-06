@@ -17,7 +17,11 @@ const serverSchema = z.object({
   SUBSIDY_UNIT_YEN: z.coerce.number().int().min(0).default(150),
   MONTHLY_LIMIT_YEN: z.coerce.number().int().min(0).default(3500),
 
-  // Dev-only Credentials (for local bootstrap)
+  // Admin Credentials (hackathon bootstrap)
+  ADMIN_EMAIL: z.string().email().optional(),
+  ADMIN_PASSWORD: z.string().min(8).optional(),
+
+  // Dev-only Credentials (backward compatibility)
   DEV_ADMIN_EMAIL: z.string().email().optional(),
   DEV_ADMIN_PASSWORD: z.string().min(8).optional(),
 
