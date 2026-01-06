@@ -39,9 +39,7 @@ function serializeError(err: unknown, depth = 0): Record<string, unknown> {
   if (depth > 3) return { message: "[Error: nested cause truncated]" }
 
   if (err instanceof Error) {
-    const cause =
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      (err as any).cause !== undefined ? serializeError((err as any).cause, depth + 1) : undefined
+    const cause = err.cause !== undefined ? serializeError(err.cause, depth + 1) : undefined
 
     return {
       name: err.name,
@@ -72,7 +70,10 @@ function sanitizeValue(value: unknown): unknown {
   if (value instanceof Date) return value.toISOString()
 
   if (typeof value === "bigint") return value.toString()
-  if (typeof value === "function") return `[Function ${(value as Function).name || "anonymous"}]`
+  if (typeof value === "function") {
+    const name = typeof (value as { name?: unknown }).name === "string" ? (value as { name: string }).name : ""
+    return `[Function ${name || "anonymous"}]`
+  }
   if (typeof value === "symbol") return value.toString()
 
   if (value instanceof Map) return Array.from(value.entries())
