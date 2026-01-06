@@ -14,10 +14,11 @@ export type LunchEntryDoc = {
   total_amount: number
   note?: string
 
-  photo_hash: string // sha256 hex
-  photo_drive_file_id: string
-  photo_url: string
-  photo_mime: string
+  // Hackathon quick mode: photo is optional
+  photo_hash?: string // sha256 hex
+  photo_drive_file_id?: string
+  photo_url?: string
+  photo_mime?: string
 
   review_status: ReviewStatus
   created_at: Date
