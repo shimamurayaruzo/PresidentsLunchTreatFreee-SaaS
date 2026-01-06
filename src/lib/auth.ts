@@ -9,7 +9,7 @@ import { clientPromise } from "@/lib/mongodb"
  * NextAuth configuration for Admin UI.
  *
  * MVP note:
- * - Provider: dev-only Credentials (email + password) for bootstrap.
+ * - Provider: Credentials (email + password) for hackathon bootstrap.
  * - Later: replace with Google/Email provider and proper user/role management.
  */
 export const authOptions: NextAuthOptions = {
@@ -18,17 +18,15 @@ export const authOptions: NextAuthOptions = {
   secret: env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
-      name: "Dev Admin",
+      name: "Admin",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // Only allow in development or when explicitly configured.
-        if (process.env.NODE_ENV !== "development") return null
-
-        const adminEmail = env.DEV_ADMIN_EMAIL
-        const adminPassword = env.DEV_ADMIN_PASSWORD
+        // Hackathon bootstrap: allow credentials login when configured via env.
+        const adminEmail = env.ADMIN_EMAIL ?? env.DEV_ADMIN_EMAIL
+        const adminPassword = env.ADMIN_PASSWORD ?? env.DEV_ADMIN_PASSWORD
         if (!adminEmail || !adminPassword) return null
 
         const email = credentials?.email?.trim().toLowerCase()
@@ -38,9 +36,9 @@ export const authOptions: NextAuthOptions = {
         if (password !== adminPassword) return null
 
         return {
-          id: `dev-admin:${email}`,
+          id: `admin:${email}`,
           email,
-          name: "Dev Admin",
+          name: "Admin",
         }
       },
     }),

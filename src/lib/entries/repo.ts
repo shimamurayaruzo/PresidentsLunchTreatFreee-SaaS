@@ -5,6 +5,43 @@ import { COLLECTIONS } from "@/lib/collections"
 import { getDb } from "@/lib/db"
 import type { LunchEntryDoc, ReviewStatus } from "@/lib/entries/types"
 
+export async function listRecentEntries(input: { tenantId: string; limit?: number; reviewStatus?: ReviewStatus }) {
+  const db = await getDb()
+  const limit = Math.min(Math.max(input.limit ?? 50, 1), 200)
+  const query: Record<string, unknown> = { tenant_id: input.tenantId }
+  if (input.reviewStatus) query.review_status = input.reviewStatus
+  return await db
+    .collection<LunchEntryDoc>(COLLECTIONS.lunchEntries)
+    .find(query, { sort: { created_at: -1 }, limit })
+    .toArray()
+}
+
+export async function findEntryById(input: { tenantId: string; entryId: string }) {
+  const db = await getDb()
+  return await db.collection<LunchEntryDoc>(COLLECTIONS.lunchEntries).findOne({
+    tenant_id: input.tenantId,
+    _id: new ObjectId(input.entryId),
+  })
+}
+
+export async function listEntriesByPhotoHash(input: { tenantId: string; photoHash: string; excludeId?: string }) {
+  const db = await getDb()
+  const query: Record<string, unknown> = {
+    tenant_id: input.tenantId,
+    photo_hash: input.photoHash,
+  }
+  if (input.excludeId) query._id = { $ne: new ObjectId(input.excludeId) }
+  return await db.collection<LunchEntryDoc>(COLLECTIONS.lunchEntries).find(query, { sort: { created_at: -1 } }).toArray()
+}
+
+export async function updateEntryReviewStatus(input: { tenantId: string; entryId: string; reviewStatus: ReviewStatus }) {
+  const db = await getDb()
+  await db.collection<LunchEntryDoc>(COLLECTIONS.lunchEntries).updateOne(
+    { tenant_id: input.tenantId, _id: new ObjectId(input.entryId) },
+    { $set: { review_status: input.reviewStatus } },
+  )
+}
+
 export async function listEntriesByMonth(input: { tenantId: string; yearMonth: string }) {
   const db = await getDb()
   return await db
