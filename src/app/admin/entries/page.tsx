@@ -1,8 +1,6 @@
 import Link from "next/link"
-import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
 
-import { authOptions } from "@/lib/auth"
+import { requireAdminSession } from "@/lib/auth-server"
 import { listEmployees } from "@/lib/pairing/repo"
 import { listRecentEntries } from "@/lib/entries/repo"
 
@@ -11,9 +9,7 @@ export default async function AdminEntriesPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect("/api/auth/signin")
-  if (session.role !== "admin") redirect("/")
+  const session = await requireAdminSession()
 
   const sp = await searchParams
   const filter = typeof sp.filter === "string" ? sp.filter : ""
@@ -27,7 +23,7 @@ export default async function AdminEntriesPage({
   const employeeMap = new Map(employees.map((e) => [e._id.toString(), e]))
 
   return (
-    <div className="mx-auto max-w-5xl p-6">
+    <div className="max-w-5xl">
       <h1 className="text-xl font-semibold">申請一覧</h1>
       <p className="mt-2 text-sm text-muted-foreground">最新100件を表示します。</p>
 

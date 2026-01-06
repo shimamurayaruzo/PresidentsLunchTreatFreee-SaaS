@@ -1,9 +1,7 @@
 import Link from "next/link"
-import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
 
 import { executeMonthlyExport, previewMonthlyExport } from "@/app/admin/monthly/actions"
-import { authOptions } from "@/lib/auth"
+import { requireAdminSession } from "@/lib/auth-server"
 import { findExportByBatchId, exportBatchId } from "@/lib/monthly/repo"
 
 function thisMonth(): string {
@@ -18,9 +16,7 @@ export default async function AdminMonthlyPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect("/api/auth/signin")
-  if (session.role !== "admin") redirect("/")
+  const session = await requireAdminSession()
 
   const sp = await searchParams
   const yearMonth = typeof sp.yearMonth === "string" ? sp.yearMonth : thisMonth()
@@ -31,7 +27,7 @@ export default async function AdminMonthlyPage({
   const exportDoc = await findExportByBatchId({ exportBatchId: batchId })
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="max-w-3xl">
       <h1 className="text-xl font-semibold">月次集計（手動）</h1>
       <p className="mt-2 text-sm text-muted-foreground">対象月を選択して、集計プレビュー→手動実行します。</p>
 
