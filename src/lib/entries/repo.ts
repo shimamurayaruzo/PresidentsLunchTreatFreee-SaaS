@@ -5,6 +5,13 @@ import { COLLECTIONS } from "@/lib/collections"
 import { getDb } from "@/lib/db"
 import type { LunchEntryDoc, ReviewStatus } from "@/lib/entries/types"
 
+export async function countEntriesByMonth(input: { tenantId: string; yearMonth: string; reviewStatus?: ReviewStatus }) {
+  const db = await getDb()
+  const query: Record<string, unknown> = { tenant_id: input.tenantId, year_month: input.yearMonth }
+  if (input.reviewStatus) query.review_status = input.reviewStatus
+  return await db.collection<LunchEntryDoc>(COLLECTIONS.lunchEntries).countDocuments(query)
+}
+
 export async function listRecentEntries(input: { tenantId: string; limit?: number; reviewStatus?: ReviewStatus }) {
   const db = await getDb()
   const limit = Math.min(Math.max(input.limit ?? 50, 1), 200)
