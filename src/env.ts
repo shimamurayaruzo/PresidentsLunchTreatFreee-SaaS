@@ -32,6 +32,7 @@ const serverSchema = z.object({
 
   // freee
   FREEE_ACCESS_TOKEN: z.string().min(1).optional(),
+  FREEE_REFRESH_TOKEN: z.string().min(1).optional(),
   FREEE_CLIENT_ID: z.string().min(1).optional(),
   FREEE_CLIENT_SECRET: z.string().min(1).optional(),
   FREEE_REDIRECT_URI: z.string().url().optional(),

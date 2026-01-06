@@ -63,6 +63,7 @@ export async function executeMonthlyExport(formData: FormData) {
     const description = `【社長ランチごちします】月次まとめ ${parsed.yearMonth}\n件数:${exportDoc.payload.total_entries} 補助合計:${exportDoc.payload.total_subsidy_yen}円\n※下書き。最終判断は経理。`
 
     const created = (await createDraftDeal({
+      tenantId: session.tenantId,
       companyId,
       issueDate,
       amount: exportDoc.payload.total_subsidy_yen,
