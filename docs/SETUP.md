@@ -15,6 +15,12 @@
 - `GOOGLE_DRIVE_PRIVATE_KEY`
 - `GOOGLE_DRIVE_FOLDER_ID`
 
+月次でfreeeに「下書き1件」を作るには追加で：
+- `FREEE_ACCESS_TOKEN`
+- `FREEE_COMPANY_ID`
+- （任意）`FREEE_ACCOUNT_ITEM_ID`（福利厚生費など）
+- （任意）`FREEE_TAX_CODE`
+
 ## 2. 起動
 
 ```bash

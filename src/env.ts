@@ -31,10 +31,13 @@ const serverSchema = z.object({
   GOOGLE_DRIVE_FOLDER_ID: z.string().min(1).optional(),
 
   // freee
+  FREEE_ACCESS_TOKEN: z.string().min(1).optional(),
   FREEE_CLIENT_ID: z.string().min(1).optional(),
   FREEE_CLIENT_SECRET: z.string().min(1).optional(),
   FREEE_REDIRECT_URI: z.string().url().optional(),
   FREEE_COMPANY_ID: z.string().min(1).optional(),
+  FREEE_ACCOUNT_ITEM_ID: z.string().min(1).optional(),
+  FREEE_TAX_CODE: z.coerce.number().int().optional(),
 })
 
 function formatZodError(err: z.ZodError): string {

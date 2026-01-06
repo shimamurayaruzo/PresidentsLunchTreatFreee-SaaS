@@ -6,8 +6,10 @@ import { z } from "zod"
 import { env } from "@/env"
 import { requireAdminSession } from "@/lib/auth-server"
 import { listEntriesByMonth } from "@/lib/entries/repo"
+import { createDraftDeal } from "@/lib/freee"
+import { writeAuditEvent } from "@/lib/audit"
 import { aggregateMonthly } from "@/lib/monthly/aggregate"
-import { exportBatchId, markExportExecuted, upsertPreviewExport } from "@/lib/monthly/repo"
+import { exportBatchId, findExportByBatchId, markExportError, markExportExecuted, upsertPreviewExport } from "@/lib/monthly/repo"
 
 const schema = z.object({
   yearMonth: z.string().regex(/^\d{4}-\d{2}$/),
@@ -47,9 +49,45 @@ export async function executeMonthlyExport(formData: FormData) {
   const yearMonth = String(formData.get("yearMonth") ?? "")
   const parsed = schema.parse({ yearMonth })
 
-  // MVP: mark as executed in DB.
-  // freee draft creation will be integrated here once OAuth tokens are available.
-  await markExportExecuted({ exportBatchId: exportBatchId(session.tenantId, parsed.yearMonth) })
+  const batchId = exportBatchId(session.tenantId, parsed.yearMonth)
+  const exportDoc = await findExportByBatchId({ exportBatchId: batchId })
+  if (!exportDoc) {
+    redirect(`/admin/monthly?yearMonth=${encodeURIComponent(parsed.yearMonth)}&error=no_preview`)
+  }
+
+  try {
+    const companyId = env.FREEE_COMPANY_ID ? Number(env.FREEE_COMPANY_ID) : NaN
+    if (!Number.isFinite(companyId)) throw new Error("FREEE_COMPANY_ID is not set")
+
+    const issueDate = `${parsed.yearMonth}-01`
+    const description = `【社長ランチごちします】月次まとめ ${parsed.yearMonth}\n件数:${exportDoc.payload.total_entries} 補助合計:${exportDoc.payload.total_subsidy_yen}円\n※下書き。最終判断は経理。`
+
+    const created = (await createDraftDeal({
+      companyId,
+      issueDate,
+      amount: exportDoc.payload.total_subsidy_yen,
+      description,
+    })) as { deal?: { id?: number | string } } | { deal_id?: number | string } | { id?: number | string }
+
+    const dealId =
+      "deal" in created ? created.deal?.id : "deal_id" in created ? created.deal_id : "id" in created ? created.id : undefined
+    await markExportExecuted({
+      exportBatchId: batchId,
+      freeeObjectId: dealId ? String(dealId) : undefined,
+      freeeDraftUrl: dealId ? `https://secure.freee.co.jp/a/company/${companyId}/deals/${dealId}` : undefined,
+    })
+
+    await writeAuditEvent({
+      tenant_id: session.tenantId,
+      event: "MONTHLY_EXPORT_EXECUTED",
+      actor_type: "admin",
+      actor_id: session.user.email ?? session.user.id,
+      meta: { year_month: parsed.yearMonth, freee_object_id: dealId ? String(dealId) : undefined },
+    })
+  } catch (e) {
+    await markExportError({ exportBatchId: batchId, message: e instanceof Error ? e.message : String(e) })
+    redirect(`/admin/monthly?yearMonth=${encodeURIComponent(parsed.yearMonth)}&error=freee`)
+  }
 
   redirect(`/admin/monthly?yearMonth=${encodeURIComponent(parsed.yearMonth)}&executed=1`)
 }
