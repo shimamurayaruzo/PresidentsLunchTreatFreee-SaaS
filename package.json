@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "freee:smoke": "node scripts/freee-smoke-test.mjs"
   },
   "dependencies": {
     "@next-auth/mongodb-adapter": "^1.1.3",
@@ -29,6 +30,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "15.5.9",
     "tailwindcss": "^4",
