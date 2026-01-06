@@ -337,6 +337,7 @@ SaaS版は次の4層に分ける。
 #### 方針
 - 職人にID入力をさせない
 - 初回のみQRで端末を登録
+ - 以後のログインレス識別は **`device_secret`（HTTP-only Cookie）** を主キーとして行う（結論）
 
 #### データ
 - `devices` に `device_secret`（端末に払い出す秘密値）と `employee_id(user_id)` を紐づけ
