@@ -15,6 +15,8 @@
 - `GOOGLE_DRIVE_PRIVATE_KEY`
 - `GOOGLE_DRIVE_FOLDER_ID`
 
+※サービスアカウント方式は「共有ドライブ必須」になりがちです。ハッカソンでは `GOOGLE_OAUTH_*`（ユーザーOAuth）方式がおすすめです（`docs/env.example.txt` 参照）。
+
 月次でfreeeに「下書き1件」を作るには追加で：
 - `FREEE_ACCESS_TOKEN`
 - `FREEE_COMPANY_ID`

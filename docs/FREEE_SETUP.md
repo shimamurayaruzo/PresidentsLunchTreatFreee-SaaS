@@ -110,5 +110,52 @@ freeeに接続できるかだけ先に確認したい場合は、スクリプト
 npm run freee:smoke
 ```
 
+---
+
+# Google Drive（写真保存）設定（ユーザーOAuth推奨）
+
+サービスアカウントは「マイドライブ」に対して容量（quota）エラーになりやすいため、ハッカソンでは **ユーザーOAuth（refresh_token）方式**を推奨します。
+
+必要な環境変数：
+
+- `GOOGLE_DRIVE_FOLDER_ID`
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `GOOGLE_OAUTH_REDIRECT_URI`
+- `GOOGLE_OAUTH_REFRESH_TOKEN`
+
+## 1) Google Cloud で OAuth クライアントを作成
+
+1. Google Cloud Console でプロジェクト作成
+2. 「APIとサービス」→「ライブラリ」→ **Google Drive API** を有効化
+3. 「APIとサービス」→「OAuth同意画面」→ 外部/内部を設定（最小でOK）
+4. 「APIとサービス」→「認証情報」→ **OAuth クライアントID** を作成
+   - 種類：デスクトップアプリ（ローカル検証が最短）
+   - 作成後、Client ID / Client Secret を控える
+
+## 2) refresh_token を取得
+
+`.env.local` に `GOOGLE_OAUTH_CLIENT_ID/SECRET/REDIRECT_URI` を入れた上で、下記を実行します：
+
+```bash
+npm run drive:oauth
+```
+
+表示されたURLをブラウザで開いて許可し、表示される `code` をコピーして、
+
+```bash
+npm run drive:oauth -- <CODE>
+```
+
+出力された `GOOGLE_OAUTH_REFRESH_TOKEN=...` を `.env.local` に設定してください。
+
+## 3) スモークテスト（Driveに小ファイルをアップロード）
+
+```bash
+npm run drive:smoke
+```
+
+成功すると `fileId` と `webViewLink` が表示され、指定フォルダにテキストが1件作成されます。
+
 
 

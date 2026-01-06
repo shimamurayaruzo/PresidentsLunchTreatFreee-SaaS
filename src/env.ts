@@ -29,6 +29,11 @@ const serverSchema = z.object({
   GOOGLE_DRIVE_CLIENT_EMAIL: z.string().min(1).optional(),
   GOOGLE_DRIVE_PRIVATE_KEY: z.string().min(1).optional(),
   GOOGLE_DRIVE_FOLDER_ID: z.string().min(1).optional(),
+  // Google OAuth (for My Drive upload; avoids Service Account quota issue)
+  GOOGLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
+  GOOGLE_OAUTH_REDIRECT_URI: z.string().min(1).optional(),
+  GOOGLE_OAUTH_REFRESH_TOKEN: z.string().min(1).optional(),
 
   // freee
   FREEE_ACCESS_TOKEN: z.string().min(1).optional(),

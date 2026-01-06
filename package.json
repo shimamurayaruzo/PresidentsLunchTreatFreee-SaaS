@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "freee:smoke": "node scripts/freee-smoke-test.mjs"
+    "freee:smoke": "node scripts/freee-smoke-test.mjs",
+    "drive:smoke": "node scripts/drive-smoke-test.mjs",
+    "drive:oauth": "node scripts/drive-oauth-setup.mjs"
   },
   "dependencies": {
     "@next-auth/mongodb-adapter": "^1.1.3",
