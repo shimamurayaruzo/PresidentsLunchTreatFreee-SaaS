@@ -33,7 +33,8 @@ export async function completePairing(formData: FormData) {
   const secret = generateDeviceSecret()
   const secretHash = hashDeviceSecret(secret)
 
-  const ua = headers().get("user-agent") ?? undefined
+  const headerStore = await headers()
+  const ua = headerStore.get("user-agent") ?? undefined
   await createDevice({
     tenantId: tokenDoc.tenant_id,
     employeeId: new ObjectId(employeeId.toString()),
@@ -43,7 +44,8 @@ export async function completePairing(formData: FormData) {
 
   await markPairingTokenUsed({ tokenId: tokenDoc._id })
 
-  cookies().set({
+  const cookieStore = await cookies()
+  cookieStore.set({
     name: "device_secret",
     value: secret,
     httpOnly: true,
