@@ -1,9 +1,8 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { getServerSession } from "next-auth"
 
 import { setReviewStatus } from "@/app/admin/entries/[id]/actions"
-import { authOptions } from "@/lib/auth"
+import { requireAdminSession } from "@/lib/auth-server"
 import { listEmployees } from "@/lib/pairing/repo"
 import { findEntryById, listEntriesByPhotoHash } from "@/lib/entries/repo"
 
@@ -12,9 +11,7 @@ export default async function AdminEntryDetailPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect("/api/auth/signin")
-  if (session.role !== "admin") redirect("/")
+  const session = await requireAdminSession()
 
   const { id } = await params
   const entry = await findEntryById({ tenantId: session.tenantId, entryId: id })
