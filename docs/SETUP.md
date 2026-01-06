@@ -21,6 +21,8 @@
 - （任意）`FREEE_ACCOUNT_ITEM_ID`（福利厚生費など）
 - （任意）`FREEE_TAX_CODE`
 
+freee連携の取得手順は `docs/FREEE_SETUP.md` を参照してください。
+
 ## 2. 起動
 
 ```bash
