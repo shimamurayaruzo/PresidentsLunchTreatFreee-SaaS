@@ -44,7 +44,7 @@ export default async function WorkerEntryPage({
       {error ? (
         <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/5 p-4">
           <p className="font-medium text-destructive">エラー</p>
-          <p className="mt-1 text-sm text-muted-foreground">写真を選択してください。</p>
+          <p className="mt-1 text-sm text-muted-foreground">申請を送信できませんでした。入力内容を確認してください。</p>
         </div>
       ) : null}
 
@@ -82,8 +82,9 @@ export default async function WorkerEntryPage({
         </div>
 
         <div className="grid gap-2">
-          <label className="text-sm font-medium">写真（弁当）</label>
-          <input type="file" name="photo" accept="image/*" className="w-full text-sm" required />
+          <label className="text-sm font-medium">写真（弁当 / 任意）</label>
+          <p className="text-xs text-muted-foreground">ハッカソン版：写真は任意です（後で経理が確認）。</p>
+          <input type="file" name="photo" accept="image/*" className="w-full text-sm" />
         </div>
 
         <div className="grid gap-2">

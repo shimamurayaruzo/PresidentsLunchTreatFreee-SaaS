@@ -73,10 +73,10 @@ export async function createLunchEntry(input: {
   siteName: string
   totalAmount: number
   note?: string
-  photoHash: string
-  photoDriveFileId: string
-  photoUrl: string
-  photoMime: string
+  photoHash?: string
+  photoDriveFileId?: string
+  photoUrl?: string
+  photoMime?: string
   reviewStatus: ReviewStatus
 }) {
   const db = await getDb()

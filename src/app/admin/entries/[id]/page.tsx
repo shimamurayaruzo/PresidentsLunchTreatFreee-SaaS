@@ -17,10 +17,10 @@ export default async function AdminEntryDetailPage({
   const entry = await findEntryById({ tenantId: session.tenantId, entryId: id })
   if (!entry) redirect("/admin/entries")
 
-  const [employees, dupes] = await Promise.all([
-    listEmployees({ tenantId: session.tenantId, limit: 500 }),
-    listEntriesByPhotoHash({ tenantId: session.tenantId, photoHash: entry.photo_hash, excludeId: id }),
-  ])
+  const employees = await listEmployees({ tenantId: session.tenantId, limit: 500 })
+  const dupes = entry.photo_hash
+    ? await listEntriesByPhotoHash({ tenantId: session.tenantId, photoHash: entry.photo_hash, excludeId: id })
+    : []
   const emp = employees.find((e) => e._id.toString() === entry.employee_id.toString())
 
   return (
@@ -66,9 +66,18 @@ export default async function AdminEntryDetailPage({
       <div className="mt-6 rounded-md border p-4">
         <p className="text-sm font-medium">写真</p>
         <p className="mt-1 text-xs text-muted-foreground">Google Driveリンク（webViewLink）</p>
-        <a href={entry.photo_url} target="_blank" rel="noreferrer" className="mt-2 inline-block underline underline-offset-4">
-          写真を開く
-        </a>
+        {entry.photo_url ? (
+          <a
+            href={entry.photo_url}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block underline underline-offset-4"
+          >
+            写真を開く
+          </a>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">写真なし（ハッカソン緊急モード）</p>
+        )}
       </div>
 
       <div className="mt-6 rounded-md border p-4">
@@ -90,6 +99,9 @@ export default async function AdminEntryDetailPage({
       <div className="mt-6 rounded-md border p-4">
         <p className="text-sm font-medium">重複検知</p>
         <p className="mt-1 text-xs text-muted-foreground">photo_hash が同一の他申請</p>
+        {!entry.photo_hash ? (
+          <p className="mt-2 text-sm text-muted-foreground">写真がないため判定できません</p>
+        ) : null}
         {dupes.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">なし</p>
         ) : (
