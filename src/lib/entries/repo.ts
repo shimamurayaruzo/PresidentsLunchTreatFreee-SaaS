@@ -5,6 +5,14 @@ import { COLLECTIONS } from "@/lib/collections"
 import { getDb } from "@/lib/db"
 import type { LunchEntryDoc, ReviewStatus } from "@/lib/entries/types"
 
+export async function listEntriesByMonth(input: { tenantId: string; yearMonth: string }) {
+  const db = await getDb()
+  return await db
+    .collection<LunchEntryDoc>(COLLECTIONS.lunchEntries)
+    .find({ tenant_id: input.tenantId, year_month: input.yearMonth }, { sort: { created_at: 1 } })
+    .toArray()
+}
+
 export async function findDuplicateByPhotoHash(input: { tenantId: string; photoHash: string }) {
   const db = await getDb()
   return await db.collection<LunchEntryDoc>(COLLECTIONS.lunchEntries).findOne({
