@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { ObjectId } from "mongodb"
 import { z } from "zod"
 
+import { writeAuditEvent } from "@/lib/audit"
 import { generateDeviceSecret, hashDeviceSecret } from "@/lib/pairing/device-secret"
 import { createDevice, findEmployeeById, findValidPairingToken, markPairingTokenUsed, revokeExistingDevices } from "@/lib/pairing/repo"
 
@@ -43,6 +44,17 @@ export async function completePairing(formData: FormData) {
   })
 
   await markPairingTokenUsed({ tokenId: tokenDoc._id })
+
+  await writeAuditEvent({
+    tenant_id: tokenDoc.tenant_id,
+    event: "PAIRING_COMPLETED",
+    actor_type: "worker",
+    actor_id: employeeId.toString(),
+    meta: {
+      token_id: tokenDoc._id.toString(),
+      user_agent: ua,
+    },
+  })
 
   const cookieStore = await cookies()
   cookieStore.set({

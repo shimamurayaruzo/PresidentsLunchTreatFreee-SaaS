@@ -5,6 +5,7 @@ import { z } from "zod"
 
 import { env } from "@/env"
 import { requireAdminSession } from "@/lib/auth-server"
+import { writeAuditEvent } from "@/lib/audit"
 import { createPairingToken, findEmployeeById, invalidateUnUsedPairingTokens } from "@/lib/pairing/repo"
 
 export const runtime = "nodejs"
@@ -42,6 +43,17 @@ export async function POST(req: Request) {
 
   const origin = env.NEXTAUTH_URL ?? req.headers.get("origin") ?? ""
   const pairingUrl = `${origin.replace(/\/$/, "")}/pairing?token=${encodeURIComponent(token)}`
+
+  await writeAuditEvent({
+    tenant_id: session.tenantId,
+    event: "PAIRING_TOKEN_ISSUED",
+    actor_type: "admin",
+    actor_id: session.user.email ?? session.user.id,
+    meta: {
+      employee_id: employeeId.toString(),
+      expires_at: expiresAt.toISOString(),
+    },
+  })
 
   return NextResponse.json({
     token: {
