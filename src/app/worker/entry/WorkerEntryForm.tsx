@@ -88,13 +88,7 @@ export function WorkerEntryForm({ defaultDate, submitAction }: Props) {
     if (validation) {
       formData.set("aiValidation", JSON.stringify(validation))
     }
-    try {
-      await submitAction(formData)
-    } catch {
-      // redirect will throw — that's expected
-    } finally {
-      setSubmitting(false)
-    }
+    await submitAction(formData)
   }
 
   return (
