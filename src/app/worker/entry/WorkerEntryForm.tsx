@@ -25,12 +25,53 @@ const categoryLabel: Record<string, string> = {
   unclear: "不明",
 }
 
+const MAX_DIMENSION = 1280
+const JPEG_QUALITY = 0.8
+
+function compressImage(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      let { width, height } = img
+
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height)
+        width = Math.round(width * ratio)
+        height = Math.round(height * ratio)
+      }
+
+      const canvas = document.createElement("canvas")
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext("2d")
+      if (!ctx) { resolve(file); return }
+      ctx.drawImage(img, 0, 0, width, height)
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return }
+          const compressed = new File([blob], file.name.replace(/\.\w+$/, ".jpg"), {
+            type: "image/jpeg",
+            lastModified: file.lastModified,
+          })
+          resolve(compressed)
+        },
+        "image/jpeg",
+        JPEG_QUALITY,
+      )
+    }
+    img.onerror = () => reject(new Error("Failed to load image"))
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 export function WorkerEntryForm({ defaultDate, submitAction }: Props) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [validation, setValidation] = useState<AiValidation | null>(null)
   const [aiUnavailable, setAiUnavailable] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const compressedFileRef = useRef<File | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -40,22 +81,29 @@ export function WorkerEntryForm({ defaultDate, submitAction }: Props) {
       setPhotoPreview(null)
       setValidation(null)
       setAiUnavailable(false)
+      compressedFileRef.current = null
       return
     }
 
-    // Show preview
+    let compressed: File
+    try {
+      compressed = await compressImage(file)
+    } catch {
+      compressed = file
+    }
+    compressedFileRef.current = compressed
+
     const reader = new FileReader()
     reader.onload = () => setPhotoPreview(reader.result as string)
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(compressed)
 
-    // Trigger AI validation
     setAnalyzing(true)
     setValidation(null)
     setAiUnavailable(false)
 
     try {
       const formData = new FormData()
-      formData.append("photo", file)
+      formData.append("photo", compressed)
 
       const res = await fetch("/api/worker/analyze-photo", {
         method: "POST",
@@ -87,6 +135,9 @@ export function WorkerEntryForm({ defaultDate, submitAction }: Props) {
     setSubmitting(true)
     if (validation) {
       formData.set("aiValidation", JSON.stringify(validation))
+    }
+    if (compressedFileRef.current) {
+      formData.set("photo", compressedFileRef.current)
     }
     await submitAction(formData)
   }
