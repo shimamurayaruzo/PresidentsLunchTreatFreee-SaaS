@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 import { env } from "@/env"
-import { requireAdminSession } from "@/lib/auth-server"
+import { requireAdminSessionForApi } from "@/lib/auth-server"
 import { writeAuditEvent } from "@/lib/audit"
 import { createPairingToken, findEmployeeById, invalidateUnUsedPairingTokens } from "@/lib/pairing/repo"
 
@@ -16,7 +16,7 @@ const createSchema = z.object({
 })
 
 export async function POST(req: Request) {
-  const session = await requireAdminSession()
+  const session = await requireAdminSessionForApi()
   const body = await req.json()
   const input = createSchema.parse(body)
 
@@ -65,5 +65,3 @@ export async function POST(req: Request) {
     },
   })
 }
-
-

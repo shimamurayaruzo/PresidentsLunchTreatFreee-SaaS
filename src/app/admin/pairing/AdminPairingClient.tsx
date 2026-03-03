@@ -1,8 +1,6 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import Image from "next/image"
-import QRCode from "qrcode"
 
 type Employee = { id: string; email: string; name?: string }
 
@@ -24,6 +22,8 @@ export function AdminPairingClient({ initialEmployees }: { initialEmployees: Emp
         return
       }
       try {
+        // Dynamic import: only load qrcode in the browser (avoids server-side canvas dependency)
+        const QRCode = await import("qrcode")
         const url = await QRCode.toDataURL(pairingUrl, { margin: 1, width: 240 })
         if (!cancelled) setQrDataUrl(url)
       } catch {
@@ -154,7 +154,10 @@ export function AdminPairingClient({ initialEmployees }: { initialEmployees: Emp
                 <div className="mt-4">
                   <p className="text-sm font-medium">QRコード</p>
                   <div className="mt-2 inline-flex rounded-md border bg-white p-2">
-                    <Image src={qrDataUrl} alt="pairing qr" width={240} height={240} />
+                    {/* Use plain <img> for data URLs — next/image cannot optimize data URLs
+                        and causes server-side errors on Vercel */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={qrDataUrl} alt="pairing qr" width={240} height={240} />
                   </div>
                   <a
                     href={qrDataUrl}
@@ -172,5 +175,3 @@ export function AdminPairingClient({ initialEmployees }: { initialEmployees: Emp
     </div>
   )
 }
-
-
