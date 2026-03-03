@@ -14,13 +14,11 @@ const optionalUrl = z
   .string()
   .optional()
   .transform((v) => (v && v.trim().length > 0 ? v.trim() : undefined))
-  .pipe(z.string().url().optional())
 
 const optionalEmail = z
   .string()
   .optional()
   .transform((v) => (v && v.trim().length > 0 ? v.trim() : undefined))
-  .pipe(z.string().email().optional())
 
 const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -68,8 +66,11 @@ const serverSchema = z.object({
   FREEE_TAX_CODE: z
     .string()
     .optional()
-    .transform((v) => (v && v.trim().length > 0 ? v.trim() : undefined))
-    .pipe(z.coerce.number().int().optional()),
+    .transform((v) => {
+      if (!v || v.trim().length === 0) return undefined
+      const n = Number(v.trim())
+      return Number.isInteger(n) ? n : undefined
+    }),
 
   // OpenAI (AI photo analysis)
   OPENAI_API_KEY: optionalString,
