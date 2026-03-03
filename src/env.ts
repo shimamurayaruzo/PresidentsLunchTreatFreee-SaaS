@@ -1,11 +1,33 @@
 import { z } from "zod"
 
+/**
+ * Helper: treat empty strings as undefined.
+ * Environment variables on Vercel/hosting platforms can be set to ""
+ * which should be treated the same as "not set".
+ */
+const optionalString = z
+  .string()
+  .optional()
+  .transform((v) => (v && v.trim().length > 0 ? v : undefined))
+
+const optionalUrl = z
+  .string()
+  .optional()
+  .transform((v) => (v && v.trim().length > 0 ? v.trim() : undefined))
+  .pipe(z.string().url().optional())
+
+const optionalEmail = z
+  .string()
+  .optional()
+  .transform((v) => (v && v.trim().length > 0 ? v.trim() : undefined))
+  .pipe(z.string().email().optional())
+
 const serverSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 
   // Auth
   NEXTAUTH_SECRET: z.string().min(1),
-  NEXTAUTH_URL: z.string().url().optional(),
+  NEXTAUTH_URL: optionalUrl,
 
   // DB
   MONGODB_URI: z.string().min(1),
@@ -18,32 +40,41 @@ const serverSchema = z.object({
   MONTHLY_LIMIT_YEN: z.coerce.number().int().min(0).default(3500),
 
   // Admin Credentials (hackathon bootstrap)
-  ADMIN_EMAIL: z.string().email().optional(),
-  ADMIN_PASSWORD: z.string().min(8).optional(),
+  ADMIN_EMAIL: optionalEmail,
+  ADMIN_PASSWORD: optionalString,
 
   // Dev-only Credentials (backward compatibility)
-  DEV_ADMIN_EMAIL: z.string().email().optional(),
-  DEV_ADMIN_PASSWORD: z.string().min(8).optional(),
+  DEV_ADMIN_EMAIL: optionalEmail,
+  DEV_ADMIN_PASSWORD: optionalString,
 
   // Google Drive (photo storage)
-  GOOGLE_DRIVE_CLIENT_EMAIL: z.string().min(1).optional(),
-  GOOGLE_DRIVE_PRIVATE_KEY: z.string().min(1).optional(),
-  GOOGLE_DRIVE_FOLDER_ID: z.string().min(1).optional(),
+  GOOGLE_DRIVE_CLIENT_EMAIL: optionalString,
+  GOOGLE_DRIVE_PRIVATE_KEY: optionalString,
+  GOOGLE_DRIVE_FOLDER_ID: optionalString,
   // Google OAuth (for My Drive upload; avoids Service Account quota issue)
-  GOOGLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
-  GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
-  GOOGLE_OAUTH_REDIRECT_URI: z.string().min(1).optional(),
-  GOOGLE_OAUTH_REFRESH_TOKEN: z.string().min(1).optional(),
+  GOOGLE_OAUTH_CLIENT_ID: optionalString,
+  GOOGLE_OAUTH_CLIENT_SECRET: optionalString,
+  GOOGLE_OAUTH_REDIRECT_URI: optionalString,
+  GOOGLE_OAUTH_REFRESH_TOKEN: optionalString,
 
   // freee
-  FREEE_ACCESS_TOKEN: z.string().min(1).optional(),
-  FREEE_REFRESH_TOKEN: z.string().min(1).optional(),
-  FREEE_CLIENT_ID: z.string().min(1).optional(),
-  FREEE_CLIENT_SECRET: z.string().min(1).optional(),
-  FREEE_REDIRECT_URI: z.string().url().optional(),
-  FREEE_COMPANY_ID: z.string().min(1).optional(),
-  FREEE_ACCOUNT_ITEM_ID: z.string().min(1).optional(),
-  FREEE_TAX_CODE: z.coerce.number().int().optional(),
+  FREEE_ACCESS_TOKEN: optionalString,
+  FREEE_REFRESH_TOKEN: optionalString,
+  FREEE_CLIENT_ID: optionalString,
+  FREEE_CLIENT_SECRET: optionalString,
+  FREEE_REDIRECT_URI: optionalUrl,
+  FREEE_COMPANY_ID: optionalString,
+  FREEE_ACCOUNT_ITEM_ID: optionalString,
+  FREEE_TAX_CODE: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim().length > 0 ? v.trim() : undefined))
+    .pipe(z.coerce.number().int().optional()),
+
+  // OpenAI (AI photo analysis)
+  OPENAI_API_KEY: optionalString,
+  OPENAI_BASE_URL: optionalUrl,
+  OPENAI_MODEL: optionalString,
 })
 
 function formatZodError(err: z.ZodError): string {
@@ -64,5 +95,3 @@ function loadServerEnv() {
 }
 
 export const env = loadServerEnv()
-
-

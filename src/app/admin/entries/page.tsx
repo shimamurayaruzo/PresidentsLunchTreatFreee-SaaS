@@ -4,6 +4,16 @@ import { requireAdminSession } from "@/lib/auth-server"
 import { listEmployees } from "@/lib/pairing/repo"
 import { listRecentEntries } from "@/lib/entries/repo"
 
+const categoryShort: Record<string, string> = {
+  bento: "弁当",
+  restaurant: "外食",
+  convenience_store: "コンビニ",
+  drink_only: "飲料",
+  receipt: "レシート",
+  unrelated: "非食事",
+  unclear: "不明",
+}
+
 export default async function AdminEntriesPage({
   searchParams,
 }: {
@@ -53,6 +63,7 @@ export default async function AdminEntriesPage({
               <th className="p-3">現場名</th>
               <th className="p-3">申請者</th>
               <th className="p-3">金額</th>
+              <th className="p-3">AI判定</th>
               <th className="p-3">ステータス</th>
               <th className="p-3"></th>
             </tr>
@@ -60,12 +71,30 @@ export default async function AdminEntriesPage({
           <tbody>
             {entries.map((e) => {
               const emp = employeeMap.get(e.employee_id.toString())
+              const ai = e.ai_validation
               return (
                 <tr key={e._id.toString()} className="border-b last:border-b-0">
                   <td className="p-3 font-mono text-xs">{e.entry_date}</td>
                   <td className="p-3">{e.site_name}</td>
                   <td className="p-3 text-xs">{emp?.email ?? e.employee_id.toString()}</td>
                   <td className="p-3 font-mono">{e.total_amount}</td>
+                  <td className="p-3">
+                    {ai ? (
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-xs ${
+                          ai.is_valid_meal
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                        title={ai.reason}
+                      >
+                        {ai.is_valid_meal ? "OK" : "NG"}{" "}
+                        {categoryShort[ai.detected_category] ?? ""}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
+                  </td>
                   <td className="p-3">
                     <span className={`rounded px-2 py-0.5 text-xs ${e.review_status === "needs_review" ? "bg-yellow-100" : "bg-emerald-100"}`}>
                       {e.review_status}
@@ -81,7 +110,7 @@ export default async function AdminEntriesPage({
             })}
             {entries.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">
+                <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">
                   申請がありません
                 </td>
               </tr>
@@ -92,5 +121,3 @@ export default async function AdminEntriesPage({
     </div>
   )
 }
-
-

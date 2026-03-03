@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
-import { requireAdminSession } from "@/lib/auth-server"
+import { requireAdminSessionForApi } from "@/lib/auth-server"
 import { createEmployee, listEmployees } from "@/lib/pairing/repo"
 
 export const runtime = "nodejs"
@@ -12,7 +12,7 @@ const createSchema = z.object({
 })
 
 export async function GET() {
-  const session = await requireAdminSession()
+  const session = await requireAdminSessionForApi()
   const employees = await listEmployees({ tenantId: session.tenantId })
   return NextResponse.json({
     employees: employees.map((e) => ({
@@ -26,7 +26,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await requireAdminSession()
+  const session = await requireAdminSessionForApi()
   const body = await req.json()
   const input = createSchema.parse(body)
 
@@ -45,5 +45,3 @@ export async function POST(req: Request) {
     },
   })
 }
-
-
