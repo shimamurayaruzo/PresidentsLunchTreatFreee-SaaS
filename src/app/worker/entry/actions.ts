@@ -5,7 +5,9 @@ import { redirect } from "next/navigation"
 import { z } from "zod"
 
 import { createLunchEntry, findDuplicateByPhotoHash } from "@/lib/entries/repo"
+import type { AiValidationResult } from "@/lib/entries/types"
 import { uploadLunchPhotoToDrive } from "@/lib/drive"
+import { validatePhoto } from "@/lib/ai-photo-analysis"
 import { logger } from "@/lib/logger"
 import { writeAuditEvent } from "@/lib/audit"
 import { requireWorkerContext } from "@/lib/worker-auth"
@@ -27,6 +29,17 @@ export async function submitLunchEntry(formData: FormData) {
   const note = String(formData.get("note") ?? "").trim() || undefined
   const photo = formData.get("photo")
 
+  // AI validation JSON from client-side pre-validation
+  const aiValidationRaw = String(formData.get("aiValidation") ?? "").trim()
+  let aiValidation: AiValidationResult | undefined
+  if (aiValidationRaw) {
+    try {
+      aiValidation = JSON.parse(aiValidationRaw) as AiValidationResult
+    } catch {
+      // ignore invalid JSON
+    }
+  }
+
   const parsed = schema.parse({
     entryDate,
     siteName,
@@ -39,12 +52,23 @@ export async function submitLunchEntry(formData: FormData) {
   let photoUrl: string | undefined
   let photoMime: string | undefined
 
-  // Hackathon quick mode: photo is optional. If provided, try to upload; if it fails, still accept the entry.
+  // Photo processing
   if (photo instanceof File && photo.type.startsWith("image/")) {
     try {
       const bytes = Buffer.from(await photo.arrayBuffer())
       photoHash = crypto.createHash("sha256").update(bytes).digest("hex")
       photoMime = photo.type
+
+      // If no AI validation was passed from client, do server-side validation
+      if (!aiValidation) {
+        try {
+          const base64 = bytes.toString("base64")
+          const result = await validatePhoto(base64, photo.type)
+          if (result) aiValidation = result
+        } catch (e) {
+          logger.warn("server-side AI photo validation failed", { err: e })
+        }
+      }
 
       const dup = await findDuplicateByPhotoHash({ tenantId: ctx.tenantId, photoHash })
       const filenameSafeDate = parsed.entryDate.replaceAll("-", "")
@@ -59,7 +83,17 @@ export async function submitLunchEntry(formData: FormData) {
       photoDriveFileId = uploaded.fileId
       photoUrl = uploaded.webViewLink
 
-      const reviewStatus = dup ? "needs_review" : "normal"
+      // Determine review status
+      let reviewStatus: "normal" | "needs_review" = "normal"
+      if (dup) {
+        reviewStatus = "needs_review"
+      } else if (aiValidation && !aiValidation.is_valid_meal) {
+        // AI says photo is not a valid meal → needs review
+        reviewStatus = "needs_review"
+      } else if (aiValidation && aiValidation.flags.length > 0) {
+        // AI raised flags → needs review
+        reviewStatus = "needs_review"
+      }
 
       const entry = await createLunchEntry({
         tenantId: ctx.tenantId,
@@ -73,6 +107,7 @@ export async function submitLunchEntry(formData: FormData) {
         photoDriveFileId,
         photoUrl,
         photoMime,
+        aiValidation,
         reviewStatus,
       })
 
@@ -82,6 +117,8 @@ export async function submitLunchEntry(formData: FormData) {
         entry_id: entry._id.toString(),
         review_status: reviewStatus,
         has_photo: true,
+        ai_is_valid_meal: aiValidation?.is_valid_meal,
+        ai_category: aiValidation?.detected_category,
       })
 
       await writeAuditEvent({
@@ -94,11 +131,17 @@ export async function submitLunchEntry(formData: FormData) {
           year_month: entry.year_month,
           review_status: reviewStatus,
           has_photo: true,
+          ai_is_valid_meal: aiValidation?.is_valid_meal,
+          ai_category: aiValidation?.detected_category,
+          ai_reason: aiValidation?.reason,
         },
       })
 
       redirect(`/worker/entry?success=1&review=${reviewStatus}`)
     } catch (e) {
+      // Re-throw redirect errors from Next.js
+      if (typeof e === "object" && e !== null && "digest" in e) throw e
+
       logger.warn("photo upload failed; accepting entry without photo", {
         tenant_id: ctx.tenantId,
         employee_id: ctx.employeeId.toString(),
@@ -108,7 +151,7 @@ export async function submitLunchEntry(formData: FormData) {
     }
   }
 
-  // No photo submission: always mark as needs_review to prompt accounting verification.
+  // No photo submission: always mark as needs_review
   const reviewStatus = "needs_review"
   const entry = await createLunchEntry({
     tenantId: ctx.tenantId,
@@ -118,10 +161,11 @@ export async function submitLunchEntry(formData: FormData) {
     siteName: parsed.siteName,
     totalAmount: parsed.totalAmount,
     note: parsed.note,
+    aiValidation,
     reviewStatus,
   })
 
-  logger.info("lunch entry created", {
+  logger.info("lunch entry created (no photo)", {
     tenant_id: ctx.tenantId,
     employee_id: ctx.employeeId.toString(),
     entry_id: entry._id.toString(),
@@ -144,5 +188,3 @@ export async function submitLunchEntry(formData: FormData) {
 
   redirect(`/worker/entry?success=1&review=${reviewStatus}`)
 }
-
-

@@ -6,6 +6,16 @@ import { requireAdminSession } from "@/lib/auth-server"
 import { listEmployees } from "@/lib/pairing/repo"
 import { findEntryById, listEntriesByPhotoHash } from "@/lib/entries/repo"
 
+const categoryLabel: Record<string, string> = {
+  bento: "弁当",
+  restaurant: "外食",
+  convenience_store: "コンビニ",
+  drink_only: "飲み物のみ",
+  receipt: "レシート",
+  unrelated: "食事以外",
+  unclear: "不明",
+}
+
 export default async function AdminEntryDetailPage({
   params,
 }: {
@@ -22,6 +32,7 @@ export default async function AdminEntryDetailPage({
     ? await listEntriesByPhotoHash({ tenantId: session.tenantId, photoHash: entry.photo_hash, excludeId: id })
     : []
   const emp = employees.find((e) => e._id.toString() === entry.employee_id.toString())
+  const ai = entry.ai_validation
 
   return (
     <div className="mx-auto max-w-3xl p-6">
@@ -48,7 +59,7 @@ export default async function AdminEntryDetailPage({
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">金額</span>
-            <span className="font-mono">{entry.total_amount}</span>
+            <span className="font-mono">{entry.total_amount}円</span>
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">ステータス</span>
@@ -62,6 +73,58 @@ export default async function AdminEntryDetailPage({
           ) : null}
         </div>
       </div>
+
+      {/* AI Validation Section */}
+      {ai ? (
+        <div
+          className={`mt-6 rounded-md border p-4 ${
+            ai.is_valid_meal
+              ? "border-emerald-200 bg-emerald-50/50"
+              : "border-red-200 bg-red-50/50"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium">
+              {ai.is_valid_meal ? "AI判定: 食事写真" : "AI判定: 要確認"}
+            </p>
+            <span
+              className={`rounded px-1.5 py-0.5 text-xs ${
+                ai.is_valid_meal
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              {categoryLabel[ai.detected_category] ?? ai.detected_category}
+            </span>
+          </div>
+
+          {/* AI-generated reason — the key value of this feature */}
+          <div className="mt-3 rounded-md border bg-white/80 p-3">
+            <p className="text-xs font-medium text-muted-foreground">AIコメント（経理向け）</p>
+            <p className="mt-1 text-sm">{ai.reason}</p>
+          </div>
+
+          <p className="mt-2 text-xs text-muted-foreground">{ai.description}</p>
+
+          {ai.flags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {ai.flags.map((flag, i) => (
+                <span
+                  key={i}
+                  className="rounded bg-yellow-100 px-1.5 py-0.5 text-xs text-yellow-700"
+                >
+                  {flag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="mt-6 rounded-md border p-4">
+          <p className="text-sm font-medium">AI判定</p>
+          <p className="mt-1 text-xs text-muted-foreground">AI判定なし（写真がない、またはAI機能が無効）</p>
+        </div>
+      )}
 
       <div className="mt-6 rounded-md border p-4">
         <p className="text-sm font-medium">写真</p>
@@ -119,5 +182,3 @@ export default async function AdminEntryDetailPage({
     </div>
   )
 }
-
-

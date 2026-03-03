@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb"
 
 import { COLLECTIONS } from "@/lib/collections"
 import { getDb } from "@/lib/db"
-import type { LunchEntryDoc, ReviewStatus } from "@/lib/entries/types"
+import type { AiValidationResult, LunchEntryDoc, ReviewStatus } from "@/lib/entries/types"
 
 export async function countEntriesByMonth(input: { tenantId: string; yearMonth: string; reviewStatus?: ReviewStatus }) {
   const db = await getDb()
@@ -77,6 +77,7 @@ export async function createLunchEntry(input: {
   photoDriveFileId?: string
   photoUrl?: string
   photoMime?: string
+  aiValidation?: AiValidationResult
   reviewStatus: ReviewStatus
 }) {
   const db = await getDb()
@@ -93,6 +94,7 @@ export async function createLunchEntry(input: {
     photo_drive_file_id: input.photoDriveFileId,
     photo_url: input.photoUrl,
     photo_mime: input.photoMime,
+    ai_validation: input.aiValidation,
     review_status: input.reviewStatus,
     created_at: new Date(),
   }
@@ -106,7 +108,6 @@ export async function createLunchEntry(input: {
 
 export async function findEmployeeByDeviceSecretHash(input: { secretHash: string }) {
   const db = await getDb()
-  // devices collection was defined in pairing types; re-fetch minimal fields here to avoid import cycles.
   const device = await db.collection(COLLECTIONS.devices).findOne({
     device_secret_hash: input.secretHash,
     revoked_at: null,
@@ -118,5 +119,3 @@ export async function findEmployeeByDeviceSecretHash(input: { secretHash: string
     employeeId: device.employee_id as ObjectId,
   }
 }
-
-

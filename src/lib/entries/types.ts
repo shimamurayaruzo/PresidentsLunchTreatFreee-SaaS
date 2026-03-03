@@ -2,6 +2,20 @@ import type { ObjectId } from "mongodb"
 
 export type ReviewStatus = "normal" | "needs_review"
 
+/** AI photo validation result stored alongside the entry */
+export type AiValidationResult = {
+  /** Whether the photo shows a valid meal/bento */
+  is_valid_meal: boolean
+  /** What the AI detected in the photo */
+  detected_category: "bento" | "restaurant" | "convenience_store" | "drink_only" | "receipt" | "unrelated" | "unclear"
+  /** Human-readable explanation in Japanese for accounting staff */
+  reason: string
+  /** Short description of what's in the photo */
+  description: string
+  /** Flags for accounting attention */
+  flags: string[]
+}
+
 export type LunchEntryDoc = {
   _id: ObjectId
   tenant_id: string
@@ -20,8 +34,9 @@ export type LunchEntryDoc = {
   photo_url?: string
   photo_mime?: string
 
+  // AI photo validation result
+  ai_validation?: AiValidationResult
+
   review_status: ReviewStatus
   created_at: Date
 }
-
-

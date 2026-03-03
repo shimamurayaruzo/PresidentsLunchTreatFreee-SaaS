@@ -44,6 +44,11 @@ const serverSchema = z.object({
   FREEE_COMPANY_ID: z.string().min(1).optional(),
   FREEE_ACCOUNT_ITEM_ID: z.string().min(1).optional(),
   FREEE_TAX_CODE: z.coerce.number().int().optional(),
+
+  // OpenAI (AI photo analysis)
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_BASE_URL: z.string().url().optional(),
+  OPENAI_MODEL: z.string().min(1).optional(),
 })
 
 function formatZodError(err: z.ZodError): string {
@@ -64,5 +69,3 @@ function loadServerEnv() {
 }
 
 export const env = loadServerEnv()
-
-
