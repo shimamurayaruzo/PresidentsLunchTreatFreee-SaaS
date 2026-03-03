@@ -113,7 +113,6 @@ export function WorkerEntryForm({ defaultDate, submitAction }: Props) {
           type="file"
           name="photo"
           accept="image/*"
-          capture="environment"
           className="w-full text-sm"
           onChange={handlePhotoChange}
         />

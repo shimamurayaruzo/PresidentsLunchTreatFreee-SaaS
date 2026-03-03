@@ -1,6 +1,25 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
+import { getServerSession } from "next-auth"
 
-export default function Home() {
+import { authOptions } from "@/lib/auth"
+import { requireWorkerContext } from "@/lib/worker-auth"
+
+export default async function Home() {
+  const session = await getServerSession(authOptions)
+  const isAdmin = session?.role === "admin"
+
+  if (isAdmin) {
+    redirect("/admin")
+  }
+
+  const workerCtx = await requireWorkerContext()
+  const isWorker = !!workerCtx
+
+  if (isWorker) {
+    redirect("/worker")
+  }
+
   return (
     <div className="mx-auto max-w-3xl p-6">
       <h1 className="text-2xl font-semibold">社長ランチごちします</h1>
@@ -17,29 +36,11 @@ export default function Home() {
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <Link href="/api/auth/signin" className="rounded-md border p-4 hover:bg-muted/30">
           <p className="font-medium">管理ログイン</p>
-          <p className="mt-1 text-sm text-muted-foreground">NextAuth（Credentials）</p>
-        </Link>
-        <Link href="/admin/pairing" className="rounded-md border p-4 hover:bg-muted/30">
-          <p className="font-medium">QR発行（管理）</p>
-          <p className="mt-1 text-sm text-muted-foreground">ペアリングURLを発行</p>
+          <p className="mt-1 text-sm text-muted-foreground">管理者はこちら</p>
         </Link>
         <Link href="/pairing" className="rounded-md border p-4 hover:bg-muted/30">
           <p className="font-medium">ペアリング（職人）</p>
-          <p className="mt-1 text-sm text-muted-foreground">/pairing?token=...</p>
-        </Link>
-        <Link href="/worker" className="rounded-md border p-4 hover:bg-muted/30">
-          <p className="font-medium">職人：申請</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            写真撮影 → AI判定 → 申請
-          </p>
-        </Link>
-        <Link href="/admin/entries" className="rounded-md border p-4 hover:bg-muted/30">
-          <p className="font-medium">管理：申請一覧</p>
-          <p className="mt-1 text-sm text-muted-foreground">AI判定結果・要確認フィルタ</p>
-        </Link>
-        <Link href="/admin/monthly" className="rounded-md border p-4 hover:bg-muted/30">
-          <p className="font-medium">管理：月次集計（手動）</p>
-          <p className="mt-1 text-sm text-muted-foreground">プレビュー → freee下書き作成</p>
+          <p className="mt-1 text-sm text-muted-foreground">QRコードで端末登録</p>
         </Link>
       </div>
 
