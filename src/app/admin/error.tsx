@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+
 export default function AdminError({
   error,
   reset,
@@ -24,12 +26,12 @@ export default function AdminError({
           >
             再読み込み
           </button>
-          <a
+          <Link
             href="/api/auth/signin"
             className="rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
           >
             ログインし直す
-          </a>
+          </Link>
         </div>
       </div>
     </div>
